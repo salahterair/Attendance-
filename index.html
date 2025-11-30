@@ -1,0 +1,629 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <title>System Histology Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --brand: #1e3a8a;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --text: #0f172a;
+      --muted: #6b7280;
+      --good: #16a34a;
+      --bad: #b91c1c;
+      --border: #e5e7eb;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      color: var(--brand);
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--brand);
+      font-size: 1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      background: #ffffff;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.05);
+    }
+
+    .btn-secondary:hover {
+      background: #d4d4d8;
+    }
+
+    .note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: var(--accent-soft);
+      color: var(--brand);
+      margin-left: 4px;
+    }
+
+    .status {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      padding: 8px 10px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .status.ok {
+      background: #dcfce7;
+      color: var(--good);
+      border: 1px solid #bbf7d0;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: var(--bad);
+      border: 1px solid #fecaca;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      margin-top: 8px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    th {
+      background: #f9fafb;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f9fafb;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    /* Teacher-only areas hidden by default */
+    .teacher-only {
+      display: none;
+    }
+
+    .teacher-visible {
+      display: block;
+    }
+
+    .login-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .login-inline input {
+      max-width: 180px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Ibn Sina Univeristy-Abha Center</h1>
+      <h1>Faculty of Medicine</h1>
+      <h1>System Histology Attendance</h1>
+      <p>QR-based attendance for the System Histology course. Please fill this form once.</p>
+    </header>
+
+    <!-- TEACHER LOGIN PANEL (students see this but cannot unlock without password) -->
+    <div class="card">
+      <div class="card-title">
+        Teacher Login
+        <span class="badge">Instructor only</span>
+      </div>
+      <div class="login-inline">
+        <div>
+          <label for="teacherPassword">Teacher password</label>
+          <input
+            id="teacherPassword"
+            type="password"
+            placeholder="••••••••"
+          />
+        </div>
+        <div>
+          <button type="button" id="teacherLoginBtn" class="btn-secondary">
+            Unlock teacher tools
+          </button>
+          <div class="note" id="loginStatusNote">
+            Students can ignore this area. It does not affect their attendance.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEACHER SETUP PANEL (hidden until login) -->
+    <div class="card teacher-only" id="teacherSetupCard">
+      <div class="card-title">
+        Teacher Setup
+        <span class="badge">Hidden from students</span>
+      </div>
+      <div class="grid">
+        <div>
+          <label for="teacherCode">Today’s attendance code pattern</label>
+          <input
+            id="teacherCode"
+            type="text"
+            placeholder="e.g. SYS-L05"
+          />
+          <div class="note">
+            Enter the code pattern you will show to students (e.g. SYS-L05).
+            Students must type a code that contains this pattern.
+          </div>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button type="button" id="setCodeBtn" class="btn-secondary">
+            Set code for this session
+          </button>
+          <div class="note" id="currentCodeNote">
+            Current code pattern: <strong><em>not set</em></strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENT FORM -->
+    <div class="card">
+      <div class="card-title">
+        Student Information
+        <span class="badge">Required</span>
+      </div>
+      <form id="attendanceForm">
+        <div class="grid">
+          <div>
+            <label for="fullName">Full Name</label>
+            <input id="fullName" name="fullName" type="text" required />
+          </div>
+          <div>
+            <label for="studentId">Student ID</label>
+            <input id="studentId" name="studentId" type="text" required />
+          </div>
+          <div>
+            <label for="course">Course</label>
+            <input
+              id="course"
+              name="course"
+              type="text"
+              value="MBBS – System Histology"
+              readonly
+            />
+            <div class="note">This form is limited to the System Histology course.</div>
+          </div>
+          <div>
+            <label for="lecture">Which System Histology lecture?</label>
+            <select id="lecture" name="lecture" required>
+              <option value="">Select lecture…</option>
+              <option>L01 – Cardiovascular System</option>
+              <option>L02 – Respiratory System</option>
+              <option>L03 – Oral Cavity & Salivary Glands</option>
+              <option>L04 – Esophagus & Stomach</option>
+              <option>L05 – Small Intestine</option>
+              <option>L06 – Large Intestine</option>
+              <option>L07 – Liver & Gallbladder</option>
+              <option>L08 – Pancreas</option>
+              <option>L09 – Kidney & Ureter</option>
+              <option>L10 – Urinary Bladder</option>
+              <option>L11 – Male Reproductive System</option>
+              <option>L12 – Female Reproductive System</option>
+              <option>L13 – Endocrine Glands</option>
+              <option>L14 – Lymphoid Organs</option>
+              <option>L15 – Skin & Appendages</option>
+              <option>L16 – Eye & Ear</option>
+            </select>
+          </div>
+          <div>
+            <label for="attendanceCode">
+              Attendance Code
+            </label>
+            <input
+              id="attendanceCode"
+              name="attendanceCode"
+              type="text"
+              placeholder="Enter code shown in class"
+              required
+            />
+            <div class="note">
+              The code is provided by the instructor during the lecture.
+            </div>
+          </div>
+          <div>
+            <label for="timestamp">Timestamp (auto)</label>
+            <input id="timestamp" name="timestamp" type="text" readonly />
+            <div class="note">
+              Will be set automatically when you submit.
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary">Submit Attendance</button>
+          <button type="button" id="downloadCsv" class="btn-secondary teacher-only">
+            Download CSV (Teacher)
+          </button>
+        </div>
+
+        <div id="statusBox" class="status"></div>
+      </form>
+    </div>
+
+    <!-- TEACHER RECORD TABLE (hidden until login) -->
+    <div class="card teacher-only" id="recordsCard">
+      <div class="card-title">
+        Attendance Records (This Session Only)
+        <span class="badge">Teacher view</span>
+      </div>
+      <p class="note">
+        These records are stored in the browser memory only. Use
+        “Download CSV” to save them before closing.
+      </p>
+      <div style="overflow-x: auto;">
+        <table id="recordsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Timestamp</th>
+              <th>Full Name</th>
+              <th>Student ID</th>
+              <th>Lecture</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows will be added here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer">
+      EasyLearn • System Histology Attendance — host this file and share the URL or use a QR code.
+    </div>
+  </div>
+
+  <script>
+    // ===== SETTINGS =====
+    // Change this password to anything you like.
+    // Students do NOT need this password; it's only for the teacher tools.
+    const TEACHER_PASSWORD = "EasyTeach2025";
+
+    // This will be set from the Teacher Setup panel
+    let currentRequiredCode = "";
+    const STORAGE_KEY = "easylearn_system_histology_attendance";
+    const TEACHER_FLAG_KEY = "easylearn_system_histology_teacher_unlocked";
+
+    const form = document.getElementById("attendanceForm");
+    const timestampInput = document.getElementById("timestamp");
+    const statusBox = document.getElementById("statusBox");
+    const recordsTableBody = document.querySelector("#recordsTable tbody");
+    const downloadCsvBtn = document.getElementById("downloadCsv");
+
+    const teacherCodeInput = document.getElementById("teacherCode");
+    const setCodeBtn = document.getElementById("setCodeBtn");
+    const currentCodeNote = document.getElementById("currentCodeNote");
+
+    const teacherPasswordInput = document.getElementById("teacherPassword");
+    const teacherLoginBtn = document.getElementById("teacherLoginBtn");
+    const loginStatusNote = document.getElementById("loginStatusNote");
+
+    const teacherSetupCard = document.getElementById("teacherSetupCard");
+    const recordsCard = document.getElementById("recordsCard");
+
+    const records = [];
+
+    function updateCurrentCodeNote() {
+      if (!currentRequiredCode) {
+        currentCodeNote.innerHTML =
+          'Current code pattern: <strong><em>not set</em></strong>';
+      } else {
+        currentCodeNote.innerHTML =
+          'Current code pattern: <strong>' +
+          currentRequiredCode +
+          "</strong>";
+      }
+    }
+
+    function showStatus(message, ok = true) {
+      statusBox.textContent = message;
+      statusBox.className = "status " + (ok ? "ok" : "error");
+      statusBox.style.display = "block";
+    }
+
+    function addRecordToTable(record) {
+      const row = document.createElement("tr");
+      const index = records.length;
+
+      row.innerHTML = `
+        <td>${index}</td>
+        <td>${record.timestamp}</td>
+        <td>${record.fullName}</td>
+        <td>${record.studentId}</td>
+        <td>${record.lecture}</td>
+      `;
+      recordsTableBody.appendChild(row);
+    }
+
+    function downloadCSV() {
+      if (records.length === 0) {
+        alert("No records to download yet.");
+        return;
+      }
+      const header = [
+        "Index",
+        "Timestamp",
+        "Full Name",
+        "Student ID",
+        "Lecture",
+        "Attendance Code"
+      ];
+      const rows = records.map((r, i) => [
+        i,
+        r.timestamp,
+        r.fullName,
+        r.studentId,
+        r.lecture,
+        r.attendanceCode
+      ]);
+
+      const csvLines = [header, ...rows]
+        .map(row =>
+          row
+            .map(field => `"${String(field).replace(/"/g, '""')}"`)
+            .join(",")
+        )
+        .join("\r\n");
+
+      const blob = new Blob([csvLines], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const today = new Date().toISOString().slice(0, 10);
+      a.download = `system_histology_attendance_${today}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function showTeacherUI() {
+      teacherSetupCard.classList.add("teacher-visible");
+      teacherSetupCard.classList.remove("teacher-only");
+      recordsCard.classList.add("teacher-visible");
+      recordsCard.classList.remove("teacher-only");
+      downloadCsvBtn.classList.add("teacher-visible");
+      downloadCsvBtn.classList.remove("teacher-only");
+      loginStatusNote.textContent = "Teacher tools unlocked on this device.";
+    }
+
+    // Teacher login
+    teacherLoginBtn.addEventListener("click", function () {
+      const entered = teacherPasswordInput.value;
+      if (!entered) {
+        alert("Please enter the teacher password.");
+        return;
+      }
+      if (entered === TEACHER_PASSWORD) {
+        localStorage.setItem(TEACHER_FLAG_KEY, "true");
+        showTeacherUI();
+        teacherPasswordInput.value = "";
+      } else {
+        alert("Incorrect teacher password.");
+      }
+    });
+
+    // Teacher sets today’s required code pattern
+    setCodeBtn.addEventListener("click", function () {
+      const value = teacherCodeInput.value.trim();
+      if (!value) {
+        alert("Please enter a non-empty code pattern, e.g. SYS-L05.");
+        return;
+      }
+      currentRequiredCode = value;
+      updateCurrentCodeNote();
+      alert("Attendance code pattern set for this session: " + currentRequiredCode);
+    });
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const fullName = form.fullName.value.trim();
+      const studentId = form.studentId.value.trim();
+      const lecture = form.lecture.value.trim();
+      const attendanceCode = form.attendanceCode.value.trim();
+
+      if (!fullName || !studentId || !lecture || !attendanceCode) {
+        showStatus("Please fill all required fields.", false);
+        return;
+      }
+
+      if (!currentRequiredCode) {
+        showStatus("Attendance is not open yet. Please wait for your instructor (code not set).", false);
+        return;
+      }
+
+      // Attendance code check (must contain the pattern)
+      if (!attendanceCode.toUpperCase().includes(currentRequiredCode.toUpperCase())) {
+        showStatus("Incorrect Attendance Code. Please check with your instructor.", false);
+        return;
+      }
+
+      // Simple duplicate prevention per device
+      const key = `${fullName}|${studentId}|${lecture}`;
+      const previous = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (previous.includes(key)) {
+        showStatus("Your attendance for this lecture was already submitted from this device.", false);
+        return;
+      }
+
+      // Set timestamp
+      const now = new Date();
+      const iso = now.toISOString();
+      timestampInput.value = iso;
+
+      const record = {
+        timestamp: iso,
+        fullName,
+        studentId,
+        lecture,
+        attendanceCode
+      };
+
+      records.push(record);
+      addRecordToTable(record);
+
+      previous.push(key);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(previous));
+
+      showStatus("Attendance submitted successfully. Thank you!", true);
+
+      // Clear only the code so they cannot re-use easily
+      form.attendanceCode.value = "";
+    });
+
+    downloadCsvBtn.addEventListener("click", downloadCSV);
+
+    // Initialize on load
+    updateCurrentCodeNote();
+
+    // If teacher already unlocked on this device before, show tools again
+    if (localStorage.getItem(TEACHER_FLAG_KEY) === "true") {
+      showTeacherUI();
+    }
+  </script>
+</body>
+</html>
