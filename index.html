@@ -179,29 +179,6 @@
       border: 1px solid #fecaca;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-      margin-top: 8px;
-    }
-
-    th, td {
-      border: 1px solid var(--border);
-      padding: 6px 8px;
-      text-align: left;
-    }
-
-    th {
-      background: #f9fafb;
-      font-weight: 600;
-      font-size: 0.75rem;
-    }
-
-    tbody tr:nth-child(even) {
-      background: #f9fafb;
-    }
-
     .footer {
       text-align: center;
       font-size: 0.75rem;
@@ -219,7 +196,6 @@
       <p>QR-based attendance for the System Histology course. Please fill this form once.</p>
     </header>
 
-    <!-- INFO ABOUT URL-BASED CODE -->
     <div class="card">
       <div class="card-title">
         Attendance Information
@@ -230,7 +206,6 @@
       </p>
     </div>
 
-    <!-- STUDENT FORM -->
     <div class="card">
       <div class="card-title">
         Student Information
@@ -305,40 +280,10 @@
 
         <div class="actions">
           <button type="submit" class="btn-primary">Submit Attendance</button>
-          <button type="button" id="downloadCsv" class="btn-secondary">
-            Download CSV (this device)
-          </button>
         </div>
 
         <div id="statusBox" class="status"></div>
       </form>
-    </div>
-
-    <!-- RECORD TABLE (DEVICE-LOCAL) -->
-    <div class="card">
-      <div class="card-title">
-        Attendance Records (This Device Only)
-        <span class="badge">Local view</span>
-      </div>
-      <p class="note">
-        These records are stored only in this browser session. Use “Download CSV” to save them.
-      </p>
-      <div style="overflow-x: auto;">
-        <table id="recordsTable">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Timestamp</th>
-              <th>Full Name</th>
-              <th>Student ID</th>
-              <th>Lecture</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Rows will be added here -->
-          </tbody>
-        </table>
-      </div>
     </div>
 
     <div class="footer">
@@ -347,49 +292,19 @@
   </div>
 
   <script>
-    // ===== SETTINGS =====
-    const STORAGE_KEY = "easylearn_system_histology_attendance_records";
+    // 🔗 1) PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE:
+    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbxs3TbHTNhynD04YnS2yFf4GfjjdcD1_IeMzUZCP_auZMyMmJzKCkJj3aopp7W195gu/exec";
+
+    // 🔐 Simple duplicate prevention per device
     const DUP_KEY = "easylearn_system_histology_attendance_duplicates";
 
     const form = document.getElementById("attendanceForm");
     const timestampInput = document.getElementById("timestamp");
     const statusBox = document.getElementById("statusBox");
-    const recordsTableBody = document.querySelector("#recordsTable tbody");
-    const downloadCsvBtn = document.getElementById("downloadCsv");
     const codeInfo = document.getElementById("codeInfo");
 
-    // This will hold the required pattern from URL (?code=...)
+    // URL-based attendance pattern (?code=SYS-L01)
     let currentRequiredCode = "";
-
-    // Load records from this device (for this browser)
-    let records = [];
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        records = JSON.parse(saved);
-      }
-    } catch (e) {
-      records = [];
-    }
-
-    function addRecordToTable(record) {
-      const row = document.createElement("tr");
-      const index = records.indexOf(record);
-
-      row.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${record.timestamp}</td>
-        <td>${record.fullName}</td>
-        <td>${record.studentId}</td>
-        <td>${record.lecture}</td>
-      `;
-      recordsTableBody.appendChild(row);
-    }
-
-    function refreshTable() {
-      recordsTableBody.innerHTML = "";
-      records.forEach(addRecordToTable);
-    }
 
     function showStatus(message, ok = true) {
       statusBox.textContent = message;
@@ -397,54 +312,29 @@
       statusBox.style.display = "block";
     }
 
-    function downloadCSV() {
-      if (records.length === 0) {
-        alert("No records to download yet.");
-        return;
+    // Initialize required code pattern from URL
+    (function initCodeFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const urlCode = params.get("code");
+      if (urlCode) {
+        currentRequiredCode = urlCode;
+        codeInfo.textContent =
+          'Attendance code must include: "' +
+          urlCode +
+          '" (announced by your instructor).';
+      } else {
+        currentRequiredCode = "";
+        codeInfo.textContent =
+          "Attendance code: this will be announced by your instructor during the lecture.";
       }
-      const header = [
-        "Index",
-        "Timestamp",
-        "Full Name",
-        "Student ID",
-        "Lecture",
-        "Attendance Code"
-      ];
-      const rows = records.map((r, i) => [
-        i + 1,
-        r.timestamp,
-        r.fullName,
-        r.studentId,
-        r.lecture,
-        r.attendanceCode
-      ]);
+    })();
 
-      const csvLines = [header, ...rows]
-        .map(row =>
-          row
-            .map(field => `"${String(field).replace(/"/g, '""')}"`)
-            .join(",")
-        )
-        .join("\r\n");
-
-      const blob = new Blob([csvLines], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const today = new Date().toISOString().slice(0, 10);
-      a.download = `system_histology_attendance_${today}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    // Handle form submission
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", async function (e) {
       e.preventDefault();
 
       const fullName = form.fullName.value.trim();
       const studentId = form.studentId.value.trim();
+      const course = form.course.value.trim();
       const lecture = form.lecture.value.trim();
       const attendanceCode = form.attendanceCode.value.trim();
 
@@ -461,7 +351,7 @@
         }
       }
 
-      // Duplicate prevention per device
+      // Duplicate prevention on this device
       let dupList = [];
       try {
         dupList = JSON.parse(localStorage.getItem(DUP_KEY) || "[]");
@@ -470,55 +360,72 @@
       }
       const dupKey = `${fullName}|${studentId}|${lecture}`;
       if (dupList.includes(dupKey)) {
-        showStatus("Your attendance for this lecture was already submitted from this device.", false);
+        showStatus(
+          "Your attendance for this lecture was already submitted from this device.",
+          false
+        );
         return;
       }
 
-      // Set timestamp
+      // Set timestamp locally
       const now = new Date();
       const iso = now.toISOString();
       timestampInput.value = iso;
 
-      const record = {
-        timestamp: iso,
+      // Build payload for Google Sheets
+      const payload = {
         fullName,
         studentId,
+        course,
         lecture,
-        attendanceCode
+        attendanceCode,
+        codePattern: currentRequiredCode || ""
       };
 
-      records.push(record);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      try {
+        const res = await fetch(ENDPOINT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
 
-      dupList.push(dupKey);
-      localStorage.setItem(DUP_KEY, JSON.stringify(dupList));
+        if (!res.ok) {
+          showStatus(
+            "Error recording attendance (server error). Please inform your instructor.",
+            false
+          );
+          return;
+        }
 
-      addRecordToTable(record);
-      showStatus("Attendance submitted successfully. Thank you!", true);
+        let result = {};
+        try {
+          result = await res.json();
+        } catch (err) {
+          // If response is not JSON, still treat as success
+          result = { status: "ok" };
+        }
 
-      // Clear only the code
-      form.attendanceCode.value = "";
-    });
+        if (result.status === "ok") {
+          showStatus("Attendance submitted successfully. Thank you!", true);
 
-    downloadCsvBtn.addEventListener("click", downloadCSV);
+          // Remember this submission on this device
+          dupList.push(dupKey);
+          localStorage.setItem(DUP_KEY, JSON.stringify(dupList));
 
-    // Initialize required code from URL (?code=...)
-    (function initCodeFromUrl() {
-      const params = new URLSearchParams(window.location.search);
-      const urlCode = params.get("code");
-      if (urlCode) {
-        currentRequiredCode = urlCode;
-        codeInfo.textContent =
-          "Attendance code must include: \"" + urlCode + "\" (announced by your instructor).";
-      } else {
-        currentRequiredCode = "";
-        codeInfo.textContent =
-          "Attendance code: this will be announced by your instructor during the lecture.";
+          // Optionally clear code
+          form.attendanceCode.value = "";
+        } else {
+          showStatus(
+            "Error recording attendance. Please inform your instructor.",
+            false
+          );
+        }
+      } catch (error) {
+        showStatus("Network error. Please try again.", false);
       }
-    })();
-
-    // On load, rebuild table from stored records (this device only)
-    refreshTable();
+    });
   </script>
 </body>
 </html>
