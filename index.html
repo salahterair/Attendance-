@@ -1,9 +1,7 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-
   <title>System Histology Attendance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
@@ -47,7 +45,7 @@
 
     header h1 {
       margin: 0;
-      font-size: 1.6rem;
+      font-size: 1.4rem;
       color: var(--brand);
     }
 
@@ -207,17 +205,8 @@
     .footer {
       text-align: center;
       font-size: 0.75rem;
-      color: var(--muted);
+      color: #b91c1c; /* red footer text */
       margin-top: 12px;
-    }
-
-    /* Teacher-only areas hidden by default */
-    .teacher-only {
-      display: none;
-    }
-
-    .teacher-visible {
-      display: block;
     }
 
     .login-inline {
@@ -230,13 +219,12 @@
     .login-inline input {
       max-width: 180px;
     }
-
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>Ibn Sina Univeristy-Abha Center</h1>
+      <h1>Ibn Sina University – Abha Center</h1>
       <h1>Faculty of Medicine</h1>
       <h1>System Histology Attendance</h1>
       <p>QR-based attendance for the System Histology course. Please fill this form once.</p>
@@ -253,8 +241,8 @@
           <label for="teacherPassword">Teacher password</label>
           <input
             id="teacherPassword"
-            type="123456"
-            placeholder="••••••••"
+            type="password"
+            placeholder="••••••"
           />
         </div>
         <div>
@@ -268,8 +256,8 @@
       </div>
     </div>
 
-    <!-- TEACHER SETUP PANEL (hidden until login) -->
-    <div class="card teacher-only" id="teacherSetupCard">
+    <!-- TEACHER SETUP PANEL (HIDDEN UNTIL LOGIN) -->
+    <div class="card" id="teacherSetupCard" style="display:none;">
       <div class="card-title">
         Teacher Setup
         <span class="badge">Hidden from students</span>
@@ -374,7 +362,8 @@
 
         <div class="actions">
           <button type="submit" class="btn-primary">Submit Attendance</button>
-          <button type="button" id="downloadCsv" class="btn-secondary teacher-only">
+          <!-- HIDDEN DOWNLOAD BUTTON UNTIL TEACHER LOGIN -->
+          <button type="button" id="downloadCsv" class="btn-secondary" style="display:none;">
             Download CSV (Teacher)
           </button>
         </div>
@@ -383,8 +372,8 @@
       </form>
     </div>
 
-    <!-- TEACHER RECORD TABLE (hidden until login) -->
-    <div class="card teacher-only" id="recordsCard">
+    <!-- TEACHER RECORD TABLE (HIDDEN UNTIL LOGIN) -->
+    <div class="card" id="recordsCard" style="display:none;">
       <div class="card-title">
         Attendance Records (This Session Only)
         <span class="badge">Teacher view</span>
@@ -418,11 +407,9 @@
 
   <script>
     // ===== SETTINGS =====
-    // Change this password to anything you like.
-    // Students do NOT need this password; it's only for the teacher tools.
-    const TEACHER_PASSWORD = "EasyTeach2025";
+    // Simple teacher password (change if you like)
+    const TEACHER_PASSWORD = "123456";
 
-    // This will be set from the Teacher Setup panel
     let currentRequiredCode = "";
     const STORAGE_KEY = "easylearn_system_histology_attendance";
     const TEACHER_FLAG_KEY = "easylearn_system_histology_teacher_unlocked";
@@ -521,12 +508,9 @@
     }
 
     function showTeacherUI() {
-      teacherSetupCard.classList.add("teacher-visible");
-      teacherSetupCard.classList.remove("teacher-only");
-      recordsCard.classList.add("teacher-visible");
-      recordsCard.classList.remove("teacher-only");
-      downloadCsvBtn.classList.add("teacher-visible");
-      downloadCsvBtn.classList.remove("teacher-only");
+      teacherSetupCard.style.display = "block";
+      recordsCard.style.display = "block";
+      downloadCsvBtn.style.display = "inline-flex";
       loginStatusNote.textContent = "Teacher tools unlocked on this device.";
     }
 
@@ -617,7 +601,7 @@
 
     downloadCsvBtn.addEventListener("click", downloadCSV);
 
-    // Initialize on load
+    // Initialize
     updateCurrentCodeNote();
 
     // If teacher already unlocked on this device before, show tools again
